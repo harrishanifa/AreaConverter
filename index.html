@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Penukar Keluasan</title>
+<meta name="description" content="Tukar keluasan tanah: meter persegi, kaki persegi, kilometer persegi, ekar dan hektar.">
+<meta name="theme-color" content="#123c69">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Keluasan">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a surveyor's field tool — clear, exact, no decoration
+   IDEA: a survey plan sheet — blue ink on gridded paper, red boundary marks
+   PICTURE: the input figure, large, with its unit, then every conversion as a ruled schedule
+   COLOUR and TYPE: plan-paper white, survey ink blue #123c69, boundary red #c8102e; Archivo + Plex Mono for figures
+   LAYOUT: one calm column, input on top, results below, stacks naturally on a phone */
+:root{color-scheme:light dark;
+--bg:light-dark(#f7f9fb,#0b1622);--paper:light-dark(#ffffff,#111f2e);--ink:light-dark(#10253d,#e6eef7);
+--blue:light-dark(#123c69,#8fb8e6);--soft:light-dark(#5b6f85,#94a7bb);--line:light-dark(#d5dee8,#22364b);
+--grid:light-dark(rgba(18,60,105,.06),rgba(143,184,230,.06));--red:light-dark(#c8102e,#ff6b7d);--chip:light-dark(#e9eff6,#1a2d42)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Archivo,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:clip;
+background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:24px 24px;min-height:100vh}
+.wrap{max-width:640px;margin:0 auto;padding:clamp(20px,4vw,48px) max(4vw,14px) 40px}
+header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+header svg{flex:none;width:44px;height:44px}
+header .ttl{flex:1}
+.lang{flex:none;display:flex;border:1.5px solid var(--blue);border-radius:999px;overflow:hidden;align-self:flex-start}
+.lang button{min-width:48px;min-height:40px;border:0;background:var(--paper);color:var(--blue);font:700 14px Archivo,system-ui,sans-serif;cursor:pointer}
+.lang button[aria-pressed=true]{background:var(--blue);color:var(--paper)}
+.lang button:focus-visible{outline:3px solid var(--red);outline-offset:-3px}
+@media(max-width:420px){header{flex-wrap:wrap}header .ttl{flex:1 1 60%}}
+h1{margin:0;font-size:clamp(26px,5vw,36px);line-height:1.05;font-weight:800;color:var(--blue);text-wrap:balance}
+.sub{margin:2px 0 0;color:var(--soft);font-size:14px}
+.sheet{background:var(--paper);border:1.5px solid var(--blue);border-radius:4px;box-shadow:0 1px 0 var(--line),0 10px 30px -18px rgba(18,60,105,.45)}
+.in{padding:20px 20px 18px;border-bottom:1.5px dashed var(--line)}
+label{display:block;font-size:14px;font-weight:600;color:var(--soft);margin-bottom:6px}
+.num{display:flex;align-items:center;gap:10px;border-bottom:3px solid var(--red);padding-bottom:4px}
+#val{flex:1;width:100%;border:0;background:transparent;color:var(--ink);font:500 clamp(32px,9vw,48px)/1.1 "IBM Plex Mono",ui-monospace,Consolas,monospace;padding:4px 0;outline:none}
+#val::placeholder{color:var(--line)}
+#clr{flex:none;width:44px;height:44px;border:0;border-radius:50%;background:var(--chip);color:var(--soft);font-size:22px;cursor:pointer}
+#clr:focus-visible,.unit:focus-visible,.row button:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.multi{display:none;gap:10px;align-items:flex-end;flex-wrap:wrap;border-bottom:3px solid var(--red);padding-bottom:6px}
+.multi.on{display:flex}.num.off{display:none}
+.multi label{margin:0;font-size:13px}.multi div{flex:1 1 90px}
+.multi input{width:100%;border:0;border-bottom:1.5px solid var(--line);background:transparent;color:var(--ink);font:500 clamp(24px,6vw,32px)/1.2 "IBM Plex Mono",ui-monospace,Consolas,monospace;padding:4px 0;outline:none}
+.multi input:focus{border-color:var(--blue)}
+.grp{font-size:13px;color:var(--soft);font-weight:600;margin:14px 0 6px}
+.row.cmb{background:light-dark(#fdf3f4,#1d1a24)}
+.msg{min-height:20px;margin:6px 0 0;font-size:14px;color:var(--red)}
+.units{display:flex;flex-wrap:wrap;gap:8px}
+.unit{min-height:44px;padding:8px 14px;border:1.5px solid var(--line);border-radius:999px;background:var(--paper);color:var(--ink);font:600 15px Archivo,system-ui,sans-serif;cursor:pointer}
+.unit[aria-pressed=true]{background:var(--blue);border-color:var(--blue);color:var(--paper)}
+.out{list-style:none;margin:0;padding:6px 0}
+.row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 12px;padding:12px 20px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.name{font-size:14px;color:var(--soft);font-weight:600}
+.fig{grid-column:1;font:500 clamp(20px,5vw,26px)/1.2 "IBM Plex Mono",ui-monospace,Consolas,monospace;overflow-wrap:anywhere;color:var(--ink)}
+.acts{grid-column:2;grid-row:1/3;display:flex;gap:6px}
+.row button{min-width:44px;height:44px;padding:0 12px;border:1.5px solid var(--line);border-radius:6px;background:var(--paper);color:var(--blue);font:600 14px Archivo,system-ui,sans-serif;cursor:pointer}
+.row button:hover,.unit:hover{border-color:var(--blue)}
+.row button.ok{background:var(--blue);color:var(--paper);border-color:var(--blue)}
+.empty{padding:26px 20px;color:var(--soft);text-align:center}
+details{margin-top:22px;font-size:14px;color:var(--soft)}
+summary{cursor:pointer;font-weight:600;color:var(--blue);min-height:32px}
+table{width:100%;border-collapse:collapse;margin-top:8px;background:var(--paper);border:1px solid var(--line)}
+td{padding:8px 10px;border-bottom:1px solid var(--line)}td:last-child{text-align:right;font-family:"IBM Plex Mono",ui-monospace,monospace;white-space:nowrap}
+#inst{display:none;margin-top:16px;width:100%;min-height:48px;border:0;border-radius:6px;background:var(--red);color:#fff;font:700 16px Archivo,system-ui,sans-serif;cursor:pointer}
+nav.tabs{display:flex;gap:0;margin:0 0 16px;border-bottom:1.5px solid var(--line)}
+nav.tabs a{flex:1;text-align:center;padding:12px 8px;min-height:44px;font-weight:700;color:var(--soft);text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-1.5px}
+nav.tabs a[aria-current=page]{color:var(--blue);border-color:var(--red)}
+nav.tabs a:focus-visible{outline:3px solid var(--red);outline-offset:-3px}
+[hidden]{display:none!important}
+.flds{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-top:14px}
+.flds input,#pts{width:100%;border:0;border-bottom:1.5px solid var(--line);background:transparent;color:var(--ink);font:500 24px/1.2 "IBM Plex Mono",ui-monospace,Consolas,monospace;padding:4px 0;outline:none}
+.flds input:focus,#pts:focus{border-color:var(--blue)}
+.flds label{margin:0;font-size:13px}
+#pts{font-size:16px;line-height:1.6;border:1.5px solid var(--line);border-radius:4px;padding:8px 10px;min-height:150px;resize:vertical}
+.hint{font-size:13px;color:var(--soft);margin:6px 0 0}
+.pv{position:relative;height:220px;border-bottom:1.5px dashed var(--line)}
+.pv>svg{position:absolute;inset:0;width:100%;height:100%}
+.res{padding:16px 20px}
+.big{font:500 clamp(30px,8vw,44px)/1.1 "IBM Plex Mono",ui-monospace,Consolas,monospace;color:var(--ink);overflow-wrap:anywhere}
+.big small{font-size:.45em;color:var(--soft);margin-left:6px}
+.sec{font:500 18px "IBM Plex Mono",ui-monospace,monospace;color:var(--soft);margin-top:4px}
+.go{margin-top:14px;width:100%;min-height:48px;border:0;border-radius:6px;background:var(--blue);color:var(--paper);font:700 16px Archivo,system-ui,sans-serif;cursor:pointer}
+.go:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.go:disabled{opacity:.4;cursor:default}
+@media(max-width:420px){.res{padding:14px}}
+footer{margin-top:20px;font-size:13px;color:var(--soft);text-align:center}
+@media(max-width:420px){.row{padding:12px 14px}.in{padding:16px 14px}.row button{padding:0 10px}}
+@media(prefers-reduced-motion:no-preference){.fig{transition:color .2s}.flash{color:var(--red)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <svg viewBox="0 0 48 48" aria-hidden="true"><rect x="1" y="1" width="46" height="46" rx="6" fill="#123c69"/><path d="M11 33 L17 12 L37 16 L34 36 Z" fill="none" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><g fill="#c8102e" stroke="#fff" stroke-width="1.5"><circle cx="11" cy="33" r="3"/><circle cx="17" cy="12" r="3"/><circle cx="37" cy="16" r="3"/><circle cx="34" cy="36" r="3"/></g></svg>
+    <div class="ttl">
+      <h1 id="h1">Penukar Keluasan</h1>
+      <p class="sub" id="sub">Metrik, imperial dan unit tradisional</p>
+    </div>
+    <div class="lang" id="lang" role="group" aria-label="Bahasa / Language">
+      <button type="button" data-l="ms" aria-pressed="true">BM</button><button type="button" data-l="en" aria-pressed="false">ENG</button>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Halaman">
+    <a href="#penukar" id="tab-conv" data-t="tabConv">Penukar</a>
+    <a href="#kalkulator" id="tab-calc" data-t="tabCalc">Kalkulator</a>
+  </nav>
+
+  <section id="v-conv">
+
+  <main class="sheet">
+    <div class="in">
+      <label for="val" data-t="val">Nilai</label>
+      <div class="num">
+        <input id="val" inputmode="decimal" autocomplete="off" placeholder="0" aria-describedby="msg">
+        <button id="clr" type="button" aria-label="Kosongkan">×</button>
+      </div>
+      <div class="multi" id="multi"></div>
+      <p class="msg" id="msg" role="status"></p>
+      <label id="ulab" data-t="from">Luas asal</label>
+      <div id="units" role="group" aria-labelledby="ulab"></div>
+    </div>
+    <ul class="out" id="out" aria-live="polite"></ul>
+  </main>
+
+  </section>
+
+  <section id="v-calc" hidden>
+    <div class="sheet">
+      <div class="in">
+        <label id="shlab" data-t="shape">Bentuk</label>
+        <div class="units" id="shapes" role="group" aria-labelledby="shlab"></div>
+        <p class="grp" id="lulab" data-t="lenU">Unit panjang</p>
+        <div class="units" id="lunits" role="group" aria-labelledby="lulab"></div>
+        <div class="flds" id="flds"></div>
+        <div id="cbox" hidden>
+          <label for="pts" style="margin-top:14px" data-t="ptsL">Koordinat</label>
+          <textarea id="pts" spellcheck="false" autocomplete="off"></textarea>
+          <p class="hint" data-t="ptsH"></p>
+        </div>
+      </div>
+      <div class="pv" id="pv" aria-hidden="true"><svg id="pvs"></svg></div>
+      <div class="res" aria-live="polite">
+        <label data-t="area">Keluasan</label>
+        <div class="big" id="cA">–</div>
+        <div class="sec" id="cB"></div>
+        <div class="sec" id="cP"></div>
+        <p class="msg" id="cmsg"></p>
+        <button type="button" class="go" id="go" data-t="goBtn" disabled>Guna dalam penukar</button>
+      </div>
+    </div>
+  </section>
+
+  <button id="inst" type="button" data-t="inst">Pasang aplikasi pada peranti ini</button>
+
+  <details>
+    <summary data-t="fac">Faktor penukaran</summary>
+    <table><tbody id="fac"></tbody></table>
+    <p data-t="note">Berdasarkan 1 kaki = 0.3048 m dan 1 ekar = 43,560 kp. Pole, rod dan perch ialah unit yang sama (16½ kaki). Nilai relung dan jemba mengikut amalan Kedah, Perlis dan Pulau Pinang; jemba juga dieja jempa atau dapoq.</p>
+  </details>
+
+  <footer>Global Survey Consultant Sdn Bhd</footer>
+</div>
+
+<script>
+{
+  const KP = 0.09290304; // m² per kaki persegi
+  const L = (ms, en) => ({ms, en: en ?? ms});
+  const U = [
+    {id:'m2',  g:'met', name:L('Meter Persegi','Square Metre'),   short:L('m²'),  m2:1},
+    {id:'ha',  g:'met', name:L('Hektar','Hectare'),               short:L('Ha','ha'),  m2:10000},
+    {id:'km2', g:'met', name:L('Kilometer Persegi','Square Kilometre'), short:L('km²'), m2:1e6},
+    {id:'kp',  g:'imp', name:L('Kaki Persegi','Square Feet'),     short:L('kp','sq ft'),  m2:KP},
+    {id:'ek',  g:'imp', name:L('Ekar','Acre'),                    short:L(''),    m2:43560*KP},
+    {id:'rd',  g:'imp', name:L('Rood'),                           short:L(''),    m2:10890*KP},
+    {id:'pl',  g:'imp', name:L('Pole / Rod'),                     short:L('persegi','square'), m2:272.25*KP},
+    {id:'rt',  g:'imp', name:L('Rantai Persegi','Square Chain'),  short:L('chain²',''), m2:4356*KP},
+    {id:'rl',  g:'trd', name:L('Relung'),                         short:L(''),    m2:30976*KP},
+    {id:'jb',  g:'trd', name:L('Jemba'),                          short:L('persegi','square'), m2:64*KP},
+    {id:'arp', g:'cmb', name:L('Ekar · Rood · Pole','Acre · Rood · Pole'), short:L(''), cmb:true,
+       parts:[['a',L('Ekar','Acre'),43560*KP],['r',L('Rood'),10890*KP],['p',L('Pole'),272.25*KP]]},
+    {id:'rj',  g:'cmb', name:L('Relung · Jemba'),                 short:L(''), cmb:true,
+       parts:[['rl',L('Relung'),30976*KP],['jb',L('Jemba'),64*KP]]}
+  ];
+  const GROUPS = ['met','imp','trd','cmb'];
+  const T = {
+    ms:{convT:'Penukar Keluasan', calcT:'Kalkulator Keluasan', sub:'Metrik, imperial dan unit tradisional', calcS:'Kira keluasan dari ukuran atau koordinat',
+        tabConv:'Penukar', tabCalc:'Kalkulator', shape:'Bentuk', lenU:'Unit panjang', area:'Keluasan', perim:'Perimeter',
+        goBtn:'Guna dalam penukar', ptsL:'Koordinat (E, N)', ptsH:'Satu titik setiap baris, ikut susunan sempadan. Boleh tampal terus dari Excel.',
+        sh:{rect:'Segi empat tepat', tri:'Segi tiga (tapak × tinggi)', heron:'Segi tiga (3 sisi)', trap:'Trapezium', circ:'Bulatan', poly:'Koordinat'},
+        f:{L:'Panjang', W:'Lebar', b:'Tapak', h:'Tinggi', a:'Sisi a', b2:'Sisi b', c:'Sisi c', p1:'Sisi selari 1', p2:'Sisi selari 2', r:'Jejari'},
+        lu:{m:'Meter', ft:'Kaki', ch:'Rantai', lk:'Ling'},
+        eTri:'Sisi ini tidak membentuk segi tiga', ePts:'Perlu sekurang-kurangnya 3 titik', eLine:'Baris tidak sah:', eNeed:'Masukkan semua ukuran', val:'Nilai', from:'Luas asal',
+        met:'Metrik', imp:'Imperial', trd:'Tradisional', cmb:'Gabungan',
+        empty:'Masukkan nilai untuk melihat penukaran.', bad:'Sila masukkan nombor yang sah',
+        copy:'Salin', use:'Guna', fail:'Gagal', clr:'Kosongkan', copyA:'Salin', useA:'sebagai nilai asal',
+        inst:'Pasang aplikasi pada peranti ini', fac:'Faktor penukaran',
+        note:'Berdasarkan 1 kaki = 0.3048 m dan 1 ekar = 43,560 kp. Pole, rod dan perch ialah unit yang sama (16½ kaki). Nilai relung dan jemba mengikut amalan Kedah, Perlis dan Pulau Pinang; jemba juga dieja jempa atau dapoq.',
+        rows:[['1 Hektar','10,000 m² = 2.4710538 ekar'],['1 Ekar','43,560 kp = 4 rood = 160 pole'],['1 Ekar','4,046.8564 m²'],
+          ['1 Rood','40 pole = 10,890 kp'],['1 Pole / Rod (persegi)','272.25 kp'],['1 Rantai persegi','4,356 kp = 0.1 ekar'],
+          ['1 Relung','484 jemba = 30,976 kp'],['1 Jemba (persegi)','64 kp (8 × 8 kaki)'],['1 m²','10.7639104 kp'],['1 km²','100 Ha']]},
+    en:{convT:'Area Converter', calcT:'Area Calculator', sub:'Metric, imperial and traditional units', calcS:'Work out area from dimensions or coordinates',
+        tabConv:'Converter', tabCalc:'Calculator', shape:'Shape', lenU:'Length unit', area:'Area', perim:'Perimeter',
+        goBtn:'Use in converter', ptsL:'Coordinates (E, N)', ptsH:'One point per line, in boundary order. You can paste straight from Excel.',
+        sh:{rect:'Rectangle', tri:'Triangle (base × height)', heron:'Triangle (3 sides)', trap:'Trapezium', circ:'Circle', poly:'Coordinates'},
+        f:{L:'Length', W:'Width', b:'Base', h:'Height', a:'Side a', b2:'Side b', c:'Side c', p1:'Parallel side 1', p2:'Parallel side 2', r:'Radius'},
+        lu:{m:'Metre', ft:'Feet', ch:'Chain', lk:'Link'},
+        eTri:'These sides do not form a triangle', ePts:'At least 3 points are needed', eLine:'Invalid line:', eNeed:'Enter all dimensions', val:'Value', from:'Convert from',
+        met:'Metric', imp:'Imperial', trd:'Traditional', cmb:'Combined',
+        empty:'Enter a value to see the conversions.', bad:'Please enter a valid number',
+        copy:'Copy', use:'Use', fail:'Failed', clr:'Clear', copyA:'Copy', useA:'as the input value',
+        inst:'Install app on this device', fac:'Conversion factors',
+        note:'Based on 1 ft = 0.3048 m and 1 acre = 43,560 sq ft. Pole, rod and perch are the same unit (16½ ft). Relung and jemba follow Kedah, Perlis and Penang practice; jemba is also spelled jempa or dapoq.',
+        rows:[['1 Hectare','10,000 m² = 2.4710538 acres'],['1 Acre','43,560 sq ft = 4 roods = 160 poles'],['1 Acre','4,046.8564 m²'],
+          ['1 Rood','40 poles = 10,890 sq ft'],['1 Square pole / rod','272.25 sq ft'],['1 Square chain','4,356 sq ft = 0.1 acre'],
+          ['1 Relung','484 jemba = 30,976 sq ft'],['1 Square jemba','64 sq ft (8 × 8 ft)'],['1 m²','10.7639104 sq ft'],['1 km²','100 ha']]}
+  };
+  let lang = 'ms';
+  try { const sl = localStorage.getItem('ak_lang'); if (sl === 'en' || sl === 'ms') lang = sl; } catch(e){}
+  const t = k => T[lang][k];
+  const nm = u => u.name[lang];
+  const $ = id => document.getElementById(id);
+  const val = $('val'), out = $('out'), msg = $('msg'), units = $('units'), multi = $('multi'), num = document.querySelector('.num');
+  const byId = id => U.find(u => u.id === id);
+  const lab = u => u.short[lang] ? `${nm(u)} (${u.short[lang]})` : nm(u);
+  let from = 'm2';
+
+  const store = {
+    get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+    set(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+  };
+
+  const fmt = n => {
+    if (n === 0) return '0';
+    if (Math.abs(n) < 0.000001) return n.toPrecision(4);
+    return n.toLocaleString('en-MY',{minimumFractionDigits:0,maximumFractionDigits:6});
+  };
+  const plain = n => {
+    const a = Math.abs(n);
+    if (a !== 0 && a < 0.000001) return String(+n.toPrecision(6));
+    return String(+n.toFixed(6));
+  };
+  const f2 = n => n.toLocaleString('en-MY',{minimumFractionDigits:0,maximumFractionDigits:2});
+
+  // Split an area (m²) into whole larger parts plus a remainder in the smallest part
+  function split(m2, parts){
+    const small = parts[parts.length-1][2];
+    let rest = Math.round(m2 / small * 100) / 100;   // in smallest unit, 2 dp
+    const neg = rest < 0; rest = Math.abs(rest);
+    const res = parts.map(([k,n,size], i) => {
+      if (i === parts.length-1) return {k,n,v:Math.round(rest*100)/100};
+      const per = Math.round(size / small);
+      const q = Math.floor(rest / per + 1e-9); rest -= q*per; return {k,n,v:q};
+    });
+    return {neg,res};
+  }
+  const cmbText = (sp, u) => (sp.neg?'−':'') + sp.res.map(p => `${f2(p.v)} ${p.n[lang].toLowerCase()}`).join('  ');
+  const cmbPlain = (sp, u) => (sp.neg?'-':'') + sp.res.map(p => `${p.v}${u.id==='arp'?p.k:' '+p.n[lang].toLowerCase()}`).join(' ');
+
+  function applyLang(){
+    document.documentElement.lang = lang === 'ms' ? 'ms' : 'en';
+    if (typeof setView === 'function'){ setView(view, true); if (view === 'calc'){ drawCalcChips(); renderCalc(); } }
+    for (const el of document.querySelectorAll('[data-t]')) el.textContent = t(el.dataset.t);
+    $('clr').setAttribute('aria-label', t('clr'));
+    for (const b of document.querySelectorAll('#lang button')) b.setAttribute('aria-pressed', b.dataset.l === lang);
+    units.innerHTML = GROUPS.map(g => `<p class="grp">${t(g)}</p><div class="units">` +
+      U.filter(u => u.g === g).map(u =>
+        `<button type="button" class="unit" data-u="${u.id}" aria-pressed="false">${lab(u)}</button>`).join('') + '</div>').join('');
+    $('fac').innerHTML = t('rows').map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+    for (const l of multi.querySelectorAll('label')){
+      const i = +$(l.htmlFor).dataset.i; l.textContent = byId(from).parts[i][1][lang];
+    }
+  }
+  $('lang').addEventListener('click', e => {
+    const b = e.target.closest('[data-l]'); if (!b || b.dataset.l === lang) return;
+    lang = b.dataset.l; try { localStorage.setItem('ak_lang', lang); } catch(err){}
+    applyLang(); render();
+  });
+
+  function parse(s){
+    s = String(s).trim().replace(/,/g,'').replace(/\s/g,'');
+    if (s === '') return null;
+    if (!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s)) return NaN;
+    return parseFloat(s);
+  }
+
+  function buildMulti(u, values){
+    multi.innerHTML = u.parts.map(([k,n],i) =>
+      `<div><label for="mp-${k}">${n[lang]}</label><input id="mp-${k}" data-i="${i}" inputmode="decimal" autocomplete="off" placeholder="0" value="${values && values[i] != null ? String(values[i]).replace(/[^\d.\-]/g,'') : ''}"></div>`).join('');
+  }
+
+  // Read the input as m²; returns null (empty), NaN (invalid) or a number
+  function readInput(){
+    const u = byId(from);
+    if (!u.cmb){ const v = parse(val.value); return v === null || Number.isNaN(v) ? v : v * u.m2; }
+    let any = false, tot = 0;
+    for (const inp of multi.querySelectorAll('input')){
+      const v = parse(inp.value); if (v === null) continue;
+      if (Number.isNaN(v)) return NaN;
+      any = true; tot += v * u.parts[+inp.dataset.i][2];
+    }
+    return any ? tot : null;
+  }
+
+  function save(){
+    const u = byId(from);
+    store.set('ak_from', from);
+    if (u.cmb) store.set('ak_cmb_'+from, JSON.stringify([...multi.querySelectorAll('input')].map(i => i.value)));
+    else store.set('ak_val', val.value);
+  }
+
+  function render(){
+    for (const b of units.querySelectorAll('.unit')) b.setAttribute('aria-pressed', b.dataset.u === from);
+    const src = byId(from);
+    num.classList.toggle('off', !!src.cmb); multi.classList.toggle('on', !!src.cmb);
+    save();
+    const base = readInput();
+    if (base === null){ msg.textContent=''; out.innerHTML = `<li class="empty">${t('empty')}</li>`; return; }
+    if (Number.isNaN(base)){ msg.textContent=t('bad'); out.innerHTML=''; return; }
+    msg.textContent = '';
+    out.innerHTML = U.filter(u => u.id !== from).map(u => {
+      if (u.cmb){
+        const sp = split(base, u.parts);
+        return `<li class="row cmb">
+          <span class="name">${nm(u)}</span>
+          <span class="fig">${cmbText(sp,u)}</span>
+          <span class="acts">
+            <button type="button" data-copy="${cmbPlain(sp,u)}" aria-label="${t('copyA')} ${nm(u)}">${t('copy')}</button>
+            <button type="button" data-use="${u.id}" data-parts="${sp.res.map(p => (sp.neg?-1:1)*p.v).join('|')}" aria-label="${t('use')} ${nm(u)} ${t('useA')}">${t('use')}</button>
+          </span></li>`;
+      }
+      const r = base / u.m2;
+      return `<li class="row">
+        <span class="name">${lab(u)}</span>
+        <span class="fig">${fmt(r)}</span>
+        <span class="acts">
+          <button type="button" data-copy="${plain(r)}" aria-label="${t('copyA')} ${nm(u)}">${t('copy')}</button>
+          <button type="button" data-use="${u.id}" data-v="${plain(r)}" aria-label="${t('use')} ${nm(u)} ${t('useA')}">${t('use')}</button>
+        </span></li>`;
+    }).join('');
+  }
+
+  function selectUnit(id, values){
+    from = id; const u = byId(id);
+    if (u.cmb){
+      let vs = values;
+      if (!vs){ try { vs = JSON.parse(store.get('ak_cmb_'+id) || 'null'); } catch(e){ vs = null; } }
+      buildMulti(u, vs);
+    }
+    render();
+    (u.cmb ? multi.querySelector('input') : val).focus({preventScroll:true});
+  }
+
+  units.addEventListener('click', e => {
+    const b = e.target.closest('.unit'); if (!b) return;
+    // keep the same area when switching units
+    const base = readInput();
+    const u = byId(b.dataset.u);
+    if (typeof base === 'number' && !Number.isNaN(base)){
+      if (u.cmb){ const sp = split(base, u.parts); selectUnit(u.id, sp.res.map(p => (sp.neg?-1:1)*p.v)); return; }
+      if (byId(from).cmb){ val.value = plain(base / u.m2); }
+    }
+    selectUnit(u.id);
+  });
+  val.addEventListener('input', render);
+  multi.addEventListener('input', render);
+  $('clr').addEventListener('click', () => { val.value=''; render(); val.focus(); });
+
+  out.addEventListener('click', async e => {
+    const c = e.target.closest('[data-copy]');
+    if (c){
+      try { await navigator.clipboard.writeText(c.dataset.copy); c.textContent='✓'; c.classList.add('ok'); }
+      catch(err){ c.textContent=t('fail'); }
+      setTimeout(()=>{ c.textContent=t('copy'); c.classList.remove('ok'); }, 1200);
+      return;
+    }
+    const g = e.target.closest('[data-use]');
+    if (!g) return;
+    if (g.dataset.parts) selectUnit(g.dataset.use, g.dataset.parts.split('|'));
+    else { val.value = g.dataset.v; selectUnit(g.dataset.use); }
+  });
+
+  const sv = store.get('ak_val'), sf = store.get('ak_from');
+  val.value = sv !== null ? sv : '1';
+  if (sf && byId(sf)) from = sf;
+
+
+  // ---------- Area calculator ----------
+  const LU = [ {id:'m',m:1,au:'m2'}, {id:'ft',m:0.3048,au:'kp'}, {id:'ch',m:20.1168,au:'rt'}, {id:'lk',m:0.201168,au:'m2'} ];
+  const SH = { rect:['L','W'], tri:['b','h'], heron:['a','b2','c'], trap:['p1','p2','h'], circ:['r'], poly:null };
+  const auLab = {m:'m²', ft:{ms:'kp',en:'sq ft'}, ch:{ms:'rantai²',en:'chain²'}, lk:{ms:'ling²',en:'link²'}};
+  let shape = 'rect', lunit = 'm', cRes = null, view = 'conv';
+  const cv = {}; // field values per shape
+  try { Object.assign(cv, JSON.parse(localStorage.getItem('ak_calc') || '{}')); } catch(e){}
+  if (cv._s && SH.hasOwnProperty(cv._s)) shape = cv._s;
+  if (cv._u && LU.some(l => l.id === cv._u)) lunit = cv._u;
+  const pts = $('pts'), flds = $('flds');
+  if (cv._pts) pts.value = cv._pts; else pts.value = '1000.000, 2000.000\n1045.250, 2010.500\n1040.100, 2062.300\n995.800, 2050.000';
+  const saveCalc = () => { cv._s = shape; cv._u = lunit; cv._pts = pts.value; try { localStorage.setItem('ak_calc', JSON.stringify(cv)); } catch(e){} };
+
+  function drawCalcChips(){
+    $('shapes').innerHTML = Object.keys(SH).map(k => `<button type="button" class="unit" data-s="${k}" aria-pressed="${k===shape}">${T[lang].sh[k]}</button>`).join('');
+    $('lunits').innerHTML = LU.map(l => `<button type="button" class="unit" data-lu="${l.id}" aria-pressed="${l.id===lunit}">${T[lang].lu[l.id]}</button>`).join('');
+    const f = SH[shape];
+    $('cbox').hidden = !!f;
+    flds.innerHTML = f ? f.map(k => `<div><label for="cf-${k}">${T[lang].f[k]}</label><input id="cf-${k}" data-k="${k}" inputmode="decimal" autocomplete="off" placeholder="0" value="${(cv[shape+'.'+k] ?? '').replace(/[^\d.,eE+\-]/g,'')}"></div>`).join('') : '';
+  }
+
+  const shoelace = P => { let s = 0; for (let i = 0; i < P.length; i++){ const [x1,y1] = P[i], [x2,y2] = P[(i+1)%P.length]; s += x1*y2 - x2*y1; } return Math.abs(s)/2; };
+  const perim = P => P.reduce((s,p,i) => { const q = P[(i+1)%P.length]; return s + Math.hypot(q[0]-p[0], q[1]-p[1]); }, 0);
+
+  // Returns {A (in length-unit²), P, poly or circle} or {err}
+  function compute(){
+    if (shape === 'poly'){
+      const P = [];
+      for (const raw of pts.value.split(/\r?\n/)){
+        const line = raw.trim(); if (!line) continue;
+        const nums = line.split(/[\s,;\t]+/).filter(Boolean);
+        // allow an optional point label first: "1  1000.0  2000.0"
+        const vals = nums.slice(-2).map(n => parse(n));
+        if (nums.length < 2 || vals.some(v => v === null || Number.isNaN(v))) return {err: `${t('eLine')} ${line.slice(0,40)}`};
+        P.push(vals);
+      }
+      if (P.length < 3) return {err:t('ePts')};
+      return {A:shoelace(P), P:perim(P), poly:P};
+    }
+    const v = {};
+    for (const k of SH[shape]){ const x = parse(cv[shape+'.'+k] ?? ''); if (x === null) return {empty:true}; if (Number.isNaN(x) || x < 0) return {err:t('bad')}; v[k] = x; }
+    if (shape === 'rect'){ const P = [[0,0],[v.L,0],[v.L,v.W],[0,v.W]]; return {A:v.L*v.W, P:2*(v.L+v.W), poly:P}; }
+    if (shape === 'tri'){ const P = [[0,0],[v.b,0],[v.b/2,v.h]]; return {A:v.b*v.h/2, P:null, poly:P}; }
+    if (shape === 'trap'){ const o = (v.p1-v.p2)/2; const P = [[0,0],[v.p1,0],[v.p1-o,v.h],[o,v.h]]; return {A:(v.p1+v.p2)/2*v.h, P:null, poly:P}; }
+    if (shape === 'circ') return {A:Math.PI*v.r*v.r, P:2*Math.PI*v.r, circle:v.r};
+    if (shape === 'heron'){
+      const {a, b2:b, c} = v, s = (a+b+c)/2, q = s*(s-a)*(s-b)*(s-c);
+      if (!(q > 0)) return {err:t('eTri')};
+      const x = (a*a + b*b - c*c)/(2*a), y = Math.sqrt(Math.max(0, b*b - x*x));
+      return {A:Math.sqrt(q), P:a+b+c, poly:[[0,0],[a,0],[x,y]]};
+    }
+  }
+
+  function drawPreview(r){
+    const s = $('pvs'), W = s.clientWidth, H = s.clientHeight;
+    if (!W || !H) return;
+    if (!r || r.err || r.empty){ s.innerHTML = ''; return; }
+    const pad = 28;
+    if (r.circle != null){
+      const R = Math.min(W,H)/2 - pad;
+      s.innerHTML = `<circle cx="${W/2}" cy="${H/2}" r="${R}" fill="var(--grid)" stroke="var(--blue)" stroke-width="2"/><line x1="${W/2}" y1="${H/2}" x2="${W/2+R}" y2="${H/2}" stroke="var(--red)" stroke-width="2" stroke-dasharray="5 4"/><circle cx="${W/2}" cy="${H/2}" r="4" fill="var(--red)"/>`;
+      return;
+    }
+    const P = r.poly, xs = P.map(p=>p[0]), ys = P.map(p=>p[1]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    const k = Math.min((W-2*pad)/((x1-x0)||1), (H-2*pad)/((y1-y0)||1));
+    const ox = (W - (x1-x0)*k)/2, oy = (H - (y1-y0)*k)/2;
+    const S = P.map(([x,y]) => [ox + (x-x0)*k, H - (oy + (y-y0)*k)]); // north up
+    const d = S.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ');
+    s.innerHTML = `<polygon points="${d}" fill="var(--grid)" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"/>` +
+      S.map((p,i) => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="5" fill="var(--red)" stroke="var(--paper)" stroke-width="1.5"/>` +
+        (shape === 'poly' && P.length <= 40 ? `<text x="${(p[0]+8).toFixed(1)}" y="${(p[1]-8).toFixed(1)}" font-size="12" font-weight="600" fill="var(--soft)">${i+1}</text>` : '')).join('');
+  }
+
+  function renderCalc(){
+    saveCalc();
+    const r = compute(); cRes = null;
+    $('cmsg').textContent = r.err || ''; $('go').disabled = true;
+    if (r.err || r.empty){ $('cA').textContent = '–'; $('cB').textContent = ''; $('cP').textContent = r.empty ? t('eNeed') : ''; drawPreview(r); return; }
+    const lu = LU.find(l => l.id === lunit), m2 = r.A * lu.m * lu.m;
+    const al = typeof auLab[lunit] === 'string' ? auLab[lunit] : auLab[lunit][lang];
+    $('cA').innerHTML = `${fmt(m2)}<small>m²</small>`;
+    $('cB').textContent = lunit === 'm' ? `${fmt(m2/10000)} ha` : `${fmt(r.A)} ${al}`;
+    const pl = {m:'m', ft:'ft', ch:lang==='ms'?'rantai':'chain', lk:lang==='ms'?'ling':'link'}[lunit];
+    $('cP').textContent = r.P != null ? `${t('perim')}: ${fmt(+r.P.toFixed(4))} ${pl}` : '';
+    cRes = {m2, A:r.A, au:lu.au}; $('go').disabled = false;
+    drawPreview(r);
+  }
+
+  $('shapes').addEventListener('click', e => { const b = e.target.closest('[data-s]'); if (!b) return; shape = b.dataset.s; drawCalcChips(); renderCalc(); });
+  $('lunits').addEventListener('click', e => { const b = e.target.closest('[data-lu]'); if (!b) return; lunit = b.dataset.lu; drawCalcChips(); renderCalc(); });
+  flds.addEventListener('input', e => { const k = e.target.dataset.k; if (!k) return; cv[shape+'.'+k] = e.target.value; renderCalc(); });
+  pts.addEventListener('input', renderCalc);
+  const pvObs = new ResizeObserver(() => { const r = compute(); drawPreview(r); });
+  pvObs.observe($('pvs'));
+
+  $('go').addEventListener('click', () => {
+    if (!cRes) return;
+    // hand over in the matching area unit when one exists, else m²
+    const id = cRes.au, value = id === 'm2' ? cRes.m2 : cRes.A;
+    val.value = plain(value); from = id;
+    location.hash = 'penukar';
+    setView('conv'); selectUnit(id);
+  });
+
+  function setView(v, quiet){
+    view = v;
+    $('v-conv').hidden = v !== 'conv'; $('v-calc').hidden = v !== 'calc';
+    $('tab-conv').setAttribute('aria-current', v === 'conv' ? 'page' : 'false');
+    $('tab-calc').setAttribute('aria-current', v === 'calc' ? 'page' : 'false');
+    $('h1').textContent = t(v === 'conv' ? 'convT' : 'calcT');
+    $('sub').textContent = t(v === 'conv' ? 'sub' : 'calcS');
+    $('fac').closest('details').hidden = v !== 'conv';
+    document.title = t(v === 'conv' ? 'convT' : 'calcT');
+    if (v === 'calc' && !quiet){ drawCalcChips(); renderCalc(); }
+  }
+  const route = () => setView(location.hash === '#kalkulator' ? 'calc' : 'conv');
+  window.addEventListener('hashchange', route);
+
+  if (byId(from).cmb){ let vs=null; try{vs=JSON.parse(store.get('ak_cmb_'+from)||'null')}catch(e){} buildMulti(byId(from), vs); }
+  render();
+  applyLang();
+  drawCalcChips(); route(); if (view === 'calc') renderCalc();
+
+  // PWA: offline support and install button (only where the browser allows it)
+  try {
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      navigator.serviceWorker.register('sw.js').catch(()=>{});
+    }
+  } catch(e){}
+  let deferred = null;
+  const inst = $('inst');
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferred = e; inst.style.display='block'; });
+  inst.addEventListener('click', async () => {
+    if (!deferred) return;
+    deferred.prompt();
+    try { await deferred.userChoice; } catch(e){}
+    deferred = null; inst.style.display='none';
+  });
+  window.addEventListener('appinstalled', () => { inst.style.display='none'; });
+}
+</script>
+</body>
+</html>
